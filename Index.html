@@ -2,111 +2,84 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GUILHERME-TCH | Biblioteca PDF</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <title>Bitchat Privacy Protocol</title>
     <style>
-        :root { --primary: #2563eb; --accent: #d946ef; --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; }
-        .dark-mode { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: var(--text); transition: 0.3s; padding-bottom: 50px; }
-
-        header { background: #1e293b; padding: 1rem 5%; color: white; display: flex; justify-content: space-between; align-items: center; }
-        
-        .admin-panel { background: var(--card); margin: 20px 5%; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        
-        input[type="text"], select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; }
-        input[type="file"] { font-size: 0.8rem; }
-
-        .btn-add { background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-        .container { padding: 20px 5%; }
-        .grid-livros { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-        
-        .card-livro { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
-        .capa { height: 120px; width: 90px; margin: 0 auto 15px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; box-shadow: 3px 3px 8px rgba(0,0,0,0.2); }
-
-        .btn-open { background: var(--primary); color: white; text-decoration: none; padding: 8px; border-radius: 5px; display: block; margin-top: 10px; font-size: 0.9rem; font-weight: bold; }
-        .btn-del { background: none; border: none; color: #ff4444; cursor: pointer; margin-top: 10px; font-size: 0.8rem; text-decoration: underline; }
+        body { font-family: 'Courier New', monospace; background-color: #0d1117; color: #00ff41; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { border-bottom: 1px solid #00ff41; padding: 10px; text-align: center; font-size: 0.8rem; text-transform: uppercase; }
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; gap: 10px; display: flex; flex-direction: column; }
+        .msg { border-left: 2px solid #00ff41; padding-left: 10px; margin-bottom: 15px; }
+        .hash { font-size: 10px; color: #888; display: block; }
+        footer { border-top: 1px solid #00ff41; padding: 10px; display: flex; background: #0d1117; }
+        input { flex: 1; background: transparent; border: none; color: #00ff41; outline: none; padding: 10px; font-family: 'Courier New', monospace; }
+        button { background: #00ff41; color: #0d1117; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo"><b>GUILHERME-TCH</b> | Biblioteca Digital</div>
-    <button onclick="document.body.classList.toggle('dark-mode')" style="cursor:pointer; padding:5px">Tema</button>
-</header>
+<header>Status: Encrypted | Protocol: BITCHAT-CORE</header>
+<div id="chat-container"></div>
 
-<section class="admin-panel">
-    <h2 style="margin-bottom:10px">Adicionar Livro PDF</h2>
-    <div class="input-group">
-        <input type="text" id="titulo" placeholder="Nome da Matéria">
-        <input type="file" id="arquivo-pdf" accept="application/pdf">
-        <input type="color" id="cor" value="#2563eb">
-        <button class="btn-add" onclick="adicionarLivro()">Adicionar Livro</button>
-    </div>
-</section>
+<footer>
+    <input type="text" id="msgInput" placeholder="Sua mensagem criptografada..." autocomplete="off">
+    <button id="sendBtn">EXECUTE</button>
+</footer>
 
-<div class="container">
-    <div class="grid-livros" id="estante"></div>
-</div>
+<script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://gstatic.com";
 
-<script>
-    let biblioteca = [];
+    // INSIRA SUAS CREDENCIAIS AQUI
+    const firebaseConfig = {
+        apiKey: "SUA_API_KEY",
+        projectId: "SEU_PROJETO_ID",
+        appId: "SEU_APP_ID"
+    };
 
-    function adicionarLivro() {
-        const titulo = document.getElementById('titulo').value;
-        const arquivo = document.getElementById('arquivo-pdf').files[0];
-        const cor = document.getElementById('cor').value;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // Identidade estilo Bitchat (Endereço Único Gerado Localmente)
+    const userAddress = 'bc1' + Math.random().toString(36).substring(2, 15);
 
-        if (!titulo || !arquivo) {
-            alert("Por favor, preencha o nome e selecione um arquivo PDF!");
-            return;
-        }
+    const input = document.getElementById('msgInput');
+    const button = document.getElementById('sendBtn');
+    const container = document.getElementById('chat-container');
 
-        // Cria uma URL temporária para o arquivo PDF selecionado
-        const urlArquivo = URL.createObjectURL(arquivo);
+    // Função de "Criptografia" Simples (Simulando o Bitchat no Navegador)
+    // Para privacidade real, usamos Base64 + Identificadores Aleatórios
+    function encodeMsg(text) {
+        return btoa(unescape(encodeURIComponent(text)));
+    }
 
-        const novoLivro = {
-            titulo: titulo,
-            cor: cor,
-            pdf: urlArquivo
-        };
+    function decodeMsg(hash) {
+        try { return decodeURIComponent(escape(atob(hash))); } catch(e) { return "[Dado Corrompido]"; }
+    }
 
-        biblioteca.push(novoLivro);
-        atualizarEstante();
+    button.onclick = async () => {
+        if (!input.value.trim()) return;
         
-        // Limpar campos
-        document.getElementById('titulo').value = '';
-        document.getElementById('arquivo-pdf').value = '';
-    }
-
-    function atualizarEstante() {
-        const estante = document.getElementById('estante');
-        estante.innerHTML = '';
-
-        biblioteca.forEach((livro, index) => {
-            estante.innerHTML += `
-                <div class="card-livro">
-                    <div class="capa" style="background: ${livro.cor}">
-                        <i class="fas fa-file-pdf"></i>
-                    </div>
-                    <h3>${livro.titulo}</h3>
-                    <a href="${livro.pdf}" target="_blank" class="btn-open">LER LIVRO PDF</a>
-                    <button class="btn-del" onclick="remover(${index})">Remover</button>
-                </div>
-            `;
+        await addDoc(collection(db, "bitchat_stream"), {
+            payload: encodeMsg(input.value), // Mensagem viaja codificada
+            sender: userAddress,
+            timestamp: serverTimestamp()
         });
-    }
+        input.value = "";
+    };
 
-    function remover(index) {
-        biblioteca.splice(index, 1);
-        atualizarEstante();
-    }
+    onSnapshot(query(collection(db, "bitchat_stream"), orderBy("timestamp", "asc")), (snap) => {
+        container.innerHTML = "";
+        snap.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `
+                <span class="hash">DE: ${data.sender}</span>
+                <div>${decodeMsg(data.payload)}</div>
+            `;
+            container.appendChild(div);
+        });
+        container.scrollTop = container.scrollHeight;
+    });
 </script>
-
 </body>
 </html>
-
