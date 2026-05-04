@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GUILHERME-TCH | Gestor de Biblioteca</title>
+    <title>GUILHERME-TCH | Biblioteca PDF</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
         :root { --primary: #2563eb; --accent: #d946ef; --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; }
@@ -14,98 +14,99 @@
 
         header { background: #1e293b; padding: 1rem 5%; color: white; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Formulário de Cadastro */
         .admin-panel { background: var(--card); margin: 20px 5%; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .admin-panel h2 { margin-bottom: 15px; font-size: 1.2rem; }
-        .input-group { display: flex; gap: 10px; flex-wrap: wrap; }
-        input, select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; min-width: 150px; }
-        .btn-add { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        
+        input[type="text"], select { padding: 10px; border: 1px solid #ddd; border-radius: 8px; flex: 1; }
+        input[type="file"] { font-size: 0.8rem; }
+
+        .btn-add { background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         .container { padding: 20px 5%; }
-        .grid-livros { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .grid-livros { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
         
-        .card-livro { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+        .card-livro { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; border: 1px solid rgba(0,0,0,0.05); }
         .capa { height: 120px; width: 90px; margin: 0 auto 15px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; box-shadow: 3px 3px 8px rgba(0,0,0,0.2); }
-        .btn-del { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; margin-top: 10px; cursor: pointer; font-size: 0.8rem; }
-        
-        #theme-btn { background: none; border: 1px solid white; color: white; cursor: pointer; padding: 5px 10px; border-radius: 5px; }
+
+        .btn-open { background: var(--primary); color: white; text-decoration: none; padding: 8px; border-radius: 5px; display: block; margin-top: 10px; font-size: 0.9rem; font-weight: bold; }
+        .btn-del { background: none; border: none; color: #ff4444; cursor: pointer; margin-top: 10px; font-size: 0.8rem; text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo"><b>GUILHERME-TCH</b></div>
-    <button id="theme-btn" onclick="document.body.classList.toggle('dark-mode')">Mudar Tema</button>
+    <div class="logo"><b>GUILHERME-TCH</b> | Biblioteca Digital</div>
+    <button onclick="document.body.classList.toggle('dark-mode')" style="cursor:pointer; padding:5px">Tema</button>
 </header>
 
 <section class="admin-panel">
-    <h2><i class="fas fa-plus-circle"></i> Adicionar Novo Livro</h2>
+    <h2 style="margin-bottom:10px">Adicionar Livro PDF</h2>
     <div class="input-group">
-        <input type="text" id="novo-titulo" placeholder="Nome da Matéria (ex: Química)">
-        <select id="novo-icone">
-            <option value="fa-book">Livro Padrão</option>
-            <option value="fa-flask">Ciências/Química</option>
-            <option value="fa-calculator">Cálculo</option>
-            <option value="fa-atlas">Geografia</option>
-            <option value="fa-palette">Artes</option>
-            <option value="fa-dumbbell">Ed. Física</option>
-        </select>
-        <input type="color" id="nova-cor" value="#2563eb" title="Escolha a cor da capa">
-        <button class="btn-add" onclick="adicionarLivro()">Adicionar à Estante</button>
+        <input type="text" id="titulo" placeholder="Nome da Matéria">
+        <input type="file" id="arquivo-pdf" accept="application/pdf">
+        <input type="color" id="cor" value="#2563eb">
+        <button class="btn-add" onclick="adicionarLivro()">Adicionar Livro</button>
     </div>
 </section>
 
 <div class="container">
-    <div class="grid-livros" id="estante">
-        <!-- Livros iniciais -->
-    </div>
+    <div class="grid-livros" id="estante"></div>
 </div>
 
 <script>
-    // Lista inicial de livros
-    let livros = [
-        { titulo: 'Matemática', icone: 'fa-calculator', cor: '#ef4444' },
-        { titulo: 'Português', icone: 'fa-language', cor: '#3b82f6' },
-        { titulo: 'Filosofia', icone: 'fa-brain', cor: '#8b5cf6' }
-    ];
+    let biblioteca = [];
 
-    function renderizarEstante() {
+    function adicionarLivro() {
+        const titulo = document.getElementById('titulo').value;
+        const arquivo = document.getElementById('arquivo-pdf').files[0];
+        const cor = document.getElementById('cor').value;
+
+        if (!titulo || !arquivo) {
+            alert("Por favor, preencha o nome e selecione um arquivo PDF!");
+            return;
+        }
+
+        // Cria uma URL temporária para o arquivo PDF selecionado
+        const urlArquivo = URL.createObjectURL(arquivo);
+
+        const novoLivro = {
+            titulo: titulo,
+            cor: cor,
+            pdf: urlArquivo
+        };
+
+        biblioteca.push(novoLivro);
+        atualizarEstante();
+        
+        // Limpar campos
+        document.getElementById('titulo').value = '';
+        document.getElementById('arquivo-pdf').value = '';
+    }
+
+    function atualizarEstante() {
         const estante = document.getElementById('estante');
         estante.innerHTML = '';
-        
-        livros.forEach((livro, index) => {
+
+        biblioteca.forEach((livro, index) => {
             estante.innerHTML += `
                 <div class="card-livro">
-                    <div class="capa" style="background: ${livro.cor}"><i class="fas ${livro.icone}"></i></div>
+                    <div class="capa" style="background: ${livro.cor}">
+                        <i class="fas fa-file-pdf"></i>
+                    </div>
                     <h3>${livro.titulo}</h3>
-                    <button class="btn-del" onclick="removerLivro(${index})">Excluir</button>
+                    <a href="${livro.pdf}" target="_blank" class="btn-open">LER LIVRO PDF</a>
+                    <button class="btn-del" onclick="remover(${index})">Remover</button>
                 </div>
             `;
         });
     }
 
-    function adicionarLivro() {
-        const titulo = document.getElementById('novo-titulo').value;
-        const icone = document.getElementById('novo-icone').value;
-        const cor = document.getElementById('nova-cor').value;
-
-        if (titulo === '') return alert("Digite o nome do livro!");
-
-        livros.push({ titulo, icone, cor });
-        document.getElementById('novo-titulo').value = ''; // Limpa o campo
-        renderizarEstante();
+    function remover(index) {
+        biblioteca.splice(index, 1);
+        atualizarEstante();
     }
-
-    function removerLivro(index) {
-        livros.splice(index, 1);
-        renderizarEstante();
-    }
-
-    // Iniciar a página
-    renderizarEstante();
 </script>
 
 </body>
 </html>
+
